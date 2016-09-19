@@ -66,7 +66,8 @@ describe('.clear(key?) {SETTER}', function() {
 });
 
 describe('.middleware {MIDDLEWARE}', function() {
-  var mockAPI = require('./mock_api')('2 seconds');
+  var expressAPI = require('./mock_express')('1 second');
+  var connectAPI = require('./mock_connect')('1 second');
   var apicache = require('../lib/apicache.js');
 
   it('is a function', function() {
@@ -74,7 +75,7 @@ describe('.middleware {MIDDLEWARE}', function() {
   });
 
   it('does not interfere with initial request', function(done) {
-    request(mockAPI)
+    request(expressAPI)
       .get('/api/movies')
       .expect('Content-Type', /json/)
       .expect(200)
@@ -84,21 +85,18 @@ describe('.middleware {MIDDLEWARE}', function() {
   });
 
   it('caches a request', function(done) {
-    request(mockAPI)
+    request(expressAPI)
       .get('/api/movies')
       .expect('Content-Type', /json/)
       .expect(200)
       .end(function(err, res) {
-        expect(mockAPI.requestsProcessed).to.equal(1);
+        expect(expressAPI.requestsProcessed).to.equal(1);
         done();
       });
   });
 
   it('injects a cache key', function() {
     expect(apicache.getIndex().all).to.include('/api/movies');
-    // setTimeout(function() {
-
-    // }, 5);
   });
 
   it('removes a cache key after expiration', function(done) {
@@ -106,7 +104,41 @@ describe('.middleware {MIDDLEWARE}', function() {
     setTimeout(function() {
       expect(apicache.getIndex().all).to.have.length(0);
       done();
-    }, 2000);
+    }, 1000);
   });
-  
+
+  describe('works with connect() via res.write()', function() {
+    it('does not interfere with initial request', function(done) {
+      request(connectAPI)
+        .get('/api/movies')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          done();
+        });
+    });
+
+    it('caches a request', function(done) {
+      request(connectAPI)
+        .get('/api/movies')
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          expect(connectAPI.requestsProcessed).to.equal(1);
+          done();
+        });
+    });
+
+    it('injects a cache key', function() {
+      expect(apicache.getIndex().all).to.include('/api/movies');
+    });
+
+    it('removes a cache key after expiration', function(done) {
+      this.timeout(5000);
+      setTimeout(function() {
+        expect(apicache.getIndex().all).to.have.length(0);
+        done();
+      }, 1000);
+    });
+  });
 });

@@ -1,5 +1,5 @@
 var express = require('express');
-var apicache = require('../lib/apicache');
+var apicache = require('../lib/apicache').options({ debug: true });
 var cache = apicache.middleware;
 
 var app = module.exports = function(expiration) {
